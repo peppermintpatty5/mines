@@ -12,13 +12,15 @@ class Minesweeper:
     """Single-use game of minesweeper"""
 
     def __init__(self, rows, cols, nMines, lives=1):
-        self.rows = int(rows)
-        self.cols = int(cols)
-        self.nMines = int(nMines)
-        self.lives = int(lives)
+        self.rows = abs(int(rows))
+        self.cols = abs(int(cols))
+        self.nMines = abs(int(nMines))
+        self.lives = abs(int(lives))
         self.dug = set()
         self.flags = set()
         self.mines = set()
+        if self.nMines > self.rows * self.cols - 1:
+            raise ValueError("Too many mines for grid size")
 
     def __getitem__(self, index):
         r, c = index
@@ -52,7 +54,14 @@ class Minesweeper:
                     )
                 )
 
-            s = {(r, c)}
+            s = set()
+            if (r, c) in self.dug:  # Uncover adjacent cells (chord)
+                a = adjacent(r, c)
+                if len(a & self.flags) == len(a & self.mines):
+                    s = a - self.flags
+            else:
+                s = {(r, c)}
+
             while len(s) > 0:
                 r, c = s.pop()
                 if 0 <= r < self.rows and 0 <= c < self.cols and (r, c) not in self.dug:
@@ -70,17 +79,18 @@ class Minesweeper:
                 self.flags.add((r, c))
 
 
-m = Minesweeper(16, 16, 40)
-while True:
-    try:
-        opt = input("Enter 'd' to dig or 'f' to flag: ").lower()
-        if opt == "d" or opt == "f":
-            r = int(input("Enter row: "))
-            c = int(input("Enter col: "))
-            (m.flag if opt == "f" else m.dig)(r, c)
-            print(m)
-    except ValueError as e:
-        pass
-    except EOFError as e:
-        print("Exiting...")
-        break
+if __name__ == "__main__":
+    m = Minesweeper(16, 30, 99)
+    while True:
+        try:
+            opt = input("Enter 'd' to dig or 'f' to flag: ").lower()
+            if opt == "d" or opt == "f":
+                r = int(input("Enter row: "))
+                c = int(input("Enter col: "))
+                (m.flag if opt == "f" else m.dig)(r, c)
+                print(m)
+        except ValueError as e:
+            pass
+        except EOFError as e:
+            print("Exiting...")
+            break
