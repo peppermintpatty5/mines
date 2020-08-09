@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 from itertools import product
 from random import sample
 
@@ -8,8 +6,13 @@ class Grid:
     """Single-use game of minesweeper"""
 
     def __init__(self, rows, cols, mines, lives=1):
+        kwargs = {"rows": rows, "cols": cols, "mines": mines, "lives": lives}
+        for k, v in kwargs.items():
+            if type(v) is not int or v < 0:
+                raise TypeError(f"'{k}' must be non-negative integer")
         if mines > rows * cols - 1:
             raise ValueError("too many mines")
+
         self.__rows = rows
         self.__cols = cols
         self.__numMines = mines
@@ -40,9 +43,9 @@ class Grid:
             " ".join(
                 "@"
                 if (r, c) in R and (r, c) in M
-                else "^"
+                else "#"
                 if (r, c) in F and (r, c) in M
-                else ("X" if lose else "^")
+                else ("X" if lose else "#")
                 if (r, c) in F
                 else ("*" if lose else "-")
                 if (r, c) in M
