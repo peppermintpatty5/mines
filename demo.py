@@ -2,10 +2,11 @@
 
 from mines import Grid
 from sys import argv
+import argparse
 import curses
 
 
-def printGrid(stdscr, grid, y=0, x=0):
+def printGrid(stdscr, grid):
     (
         BLACK,
         RED,
@@ -24,7 +25,6 @@ def printGrid(stdscr, grid, y=0, x=0):
         BRIGHT_CYAN,
         BRIGHT_WHITE,
     ) = tuple(range(16))
-
     cellColors = {
         "1": BRIGHT_BLUE,
         "2": GREEN,
@@ -35,12 +35,15 @@ def printGrid(stdscr, grid, y=0, x=0):
         "7": BRIGHT_WHITE,
         "8": BRIGHT_BLACK,
         "@": BRIGHT_YELLOW,
-        "*": BRIGHT_MAGENTA,
-        "#": MAGENTA,
+        "*": YELLOW,
+        "#": YELLOW,
         "X": BRIGHT_MAGENTA,
         "-": BRIGHT_BLACK,
     }
-    for row in str(grid).split("\n"):
+
+    lose = False
+    s = str(grid) if lose else str(grid).replace("X", "#").replace("*", "-")
+    for row in s.split("\n"):
         stdscr.addstr(" ")
         for cell in row.split(" "):
             if cell != "0":
@@ -52,7 +55,7 @@ def printGrid(stdscr, grid, y=0, x=0):
     stdscr.refresh()
 
 
-def main(stdscr):
+def main(stdscr, args):
     # curses init
     curses.start_color()
     curses.use_default_colors()
@@ -61,8 +64,7 @@ def main(stdscr):
 
     # game init
     x, y = 0, 0
-    rows, cols, mines = 16, 30, 99
-    grid = Grid(rows, cols, mines)
+    grid = Grid(args.rows, args.cols, args.mines)
 
     # game loop
     while True:
@@ -76,18 +78,25 @@ def main(stdscr):
         if c in (ord("q"), ord("Q")):
             break
         elif c in [curses.KEY_UP, ord("w"), ord("W")]:
-            y = (y - 1) % rows
+            y = (y - 1) % args.rows
         elif c in [curses.KEY_DOWN, ord("s"), ord("S")]:
-            y = (y + 1) % rows
+            y = (y + 1) % args.rows
         elif c in [curses.KEY_LEFT, ord("a"), ord("A")]:
-            x = (x - 1) % cols
+            x = (x - 1) % args.cols
         elif c in [curses.KEY_RIGHT, ord("d"), ord("D")]:
-            x = (x + 1) % cols
+            x = (x + 1) % args.cols
         elif c in [ord(" ")]:
-            grid.leftClick(y, x)
+            grid.chord(y, x) or grid.flag(y, x)
         elif c in [curses.KEY_ENTER, ord("\n"), ord("\r")]:
-            grid.rightClick(y, x)
+            grid.reveal(y, x)
 
 
 if __name__ == "__main__":
-    curses.wrapper(main)
+    parser = argparse.ArgumentParser(description="Plays a game of minesweeper")
+    parser.add_argument("rows", help="Number of rows", type=int)
+    parser.add_argument("cols", help="Number of columns", type=int)
+    parser.add_argument("mines", help="Number of mines", type=int)
+    parser.add_argument("-l", "--lives", help="Number of lives", type=int, default=1)
+
+    args = parser.parse_args()
+    curses.wrapper(main, args)

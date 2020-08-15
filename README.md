@@ -2,68 +2,49 @@
 
 Set-based implementation of minesweeper in Python
 
-## Overview
+## Data structures
 
-Typically, minesweeper is implemented using a 2D array of cells. The following table shows an example grid containing all possible cells. The two missing combinations reflect the fact that `dug` and `flag` properties are mutually exclusive (cannot both be true).
+A minesweeper grid is defined by three sets of integer pairs. These sets denote the indices of revealed cells, flagged cells, and cells that are mines respectively:
 
-```txt
-+-----+-----+------+------+------+
-| row | col | dug  | flag | mine |
-+-----+-----+------+------+------+
-|   0 |   0 |    0 |    0 |    0 |
-|   0 |   1 |    0 |    0 |    1 |
-|   0 |   2 |    0 |    1 |    0 |
-|   1 |   0 |    0 |    1 |    1 |
-|   1 |   1 |    1 |    0 |    0 |
-|   1 |   2 |    1 |    0 |    1 |
-+-----+-----+------+------+------+
-```
+$$ R, F, M \subset \mathbb Z ^ 2 $$
 
-The printout of the grid would look like this:
+Since a cell cannot be both revealed and flagged, the following sets must always be disjoint:
 
-```txt
-- * X
-^ 3 @
-```
+$$ R \cap F = \emptyset $$
 
-Now, the above table translated into three sets. Like before, the `dug` and `flag` sets are disjoint (intersection is the empty set).
+*Disclaimer:* An infinite minesweeper grid would be silly, so restrictions must be made according to the number of rows and columns.
 
-```py
-dug = {(1, 1), (1, 2)}
-flag = {(0, 2), (1, 0)}
-mine = {(0, 1), (1, 0), (1, 2)}
-```
+## Algorithms
 
-The result of this alteration is a program that is less efficient, but far more elegant in terms of mathematical reasoning and code style. It also retains the same time/space complexities, as will be explained below.
+Let `A` be the set of cells adjacent to `x = (r, c)`:
 
-## Mathematical background
+$$ A = \left ( \left \{ r - 1, r, r + 1 \right \} \times \left \{ c - 1, c, c + 1 \right \} \right ) \setminus \left \{ \left ( r, c \right ) \right \} $$
 
-The following set properties translate directly into Python code optimizations:
-<!-- One day, GitHub will bestow upon us built-in LaTeX rendering. -->
-![x \in A \cup B \equiv x \in A \vee x \in B](https://latex.codecogs.com/svg.latex?x%20%5Cin%20A%20%5Ccup%20B%20%5Cequiv%20x%20%5Cin%20A%20%5Cvee%20x%20%5Cin%20B)
+### Reveal
 
-![x \in A \cap B \equiv x \in A \wedge x \in B](https://latex.codecogs.com/svg.latex?x%20%5Cin%20A%20%5Ccap%20B%20%5Cequiv%20x%20%5Cin%20A%20%5Cwedge%20x%20%5Cin%20B)
+**Condition** - `x` is not flagged:
 
-![x \in A - B \equiv x \in A \wedge x \notin B](https://latex.codecogs.com/svg.latex?x%20%5Cin%20A%20-%20B%20%5Cequiv%20x%20%5Cin%20A%20%5Cwedge%20x%20%5Cnotin%20B)
+$$ x \notin F $$
 
-```py
-(x in A | B) is (x in A or x in B)
-(x in A & B) is (x in A and x in B)
-(x in A - B) is (x in A and x not in B)
-```
+**Action** - Adds `x` to `R`:
 
-In cases where `A` is of constant size, `&` and `-` are `O(1)`.
+$$ R \cup \left \{ x \right \} $$
 
-| Operation |  Average case  |
-| :-------- | :------------: |
-| `A \| B`  |   `O(a + b)`   |
-| `A & B`   | `O(min(a, b))` |
-| `A - B`   |     `O(a)`     |
+### Flag
 
-## Algorithm descriptions
+**Condition** - `x` has not been revealed:
+$$ x \notin R $$
 
-*Note:* For simplicity, the number of mines is assumed to be proportional to the number of cells. Therefore, `n` will be used to describe both quantities simultaneously.
+**Action** - If `x` is flagged, then it will be un-flagged and vice versa. This is done rather neatly by updating `F` via symmetric difference:
 
-* **dig** `O(1)` - Uncovers a cell by adding it to `dug`
-* **flag** `O(1)` - Toggles a cell's flag on/off by adding/removing it to/from `dug`
-* **chord** `O(1)` - Checks if the number of adjacent flags equals the number of adjacent mines, then adds the adjacent non-flag cells to `dug`
+$$ F \triangle \left \{ x \right \} $$
+
+### Chord
+
+**Condition** - `x` has been revealed and is not a mine and the number of adjacent flags plus the number of adjacent revealed mines equals the number of adjacent mines:
+
+$$ x \in R \wedge x \notin M \wedge \left | A \cap F \right | + \left | A \cap R \cap M \right | = \left | A \cap M \right | $$
+
+**Action** - Adds adjacent non-flagged cells to `R`:
+
+$$ R \cup \left ( A \setminus F \right ) $$
