@@ -1,0 +1,56 @@
+\title{Set-based Minesweeper}
+\date{}
+\author{peppermintpatty5}
+
+\documentclass[12pt]{article}
+\setlength\parindent{0pt}
+
+\usepackage{amsfonts}
+
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\section{Data Structures}
+
+A minesweeper grid is defined by three sets of pairs of integers $R, F, M \subset \mathbb{Z} ^ 2$ which denote the indices of revealed cells, flagged cells, and cells that are mines respectively. It is always the case that $R \cap F = \emptyset$ because a cell cannot be both revealed and flagged.
+
+\section{Algorithms}
+
+Let $A$ be the set of cells adjacent to $x = (r, c)$:
+
+$$ A = \left ( \left \{ r - 1, r, r + 1 \right \} \times \left \{ c - 1, c, c + 1 \right \} \right ) \setminus \left \{ \left ( r, c \right ) \right \} $$
+
+\subsection{Reveal}
+
+If $x$ is not flagged:
+
+$$ x \notin F $$
+
+Then add $x$ to $R$:
+
+$$ R \cup \left \{ x \right \} $$
+
+\subsection{Flag}
+
+If $x$ has not been revealed:
+
+$$ x \notin R $$
+
+Then if $x$ is flagged, then it will be un-flagged and vice versa. This is done rather neatly by updating $F$ via symmetric difference:
+
+$$ F \triangle \left \{ x \right \} $$
+
+\subsection{Chord}
+
+If $x$ has been revealed and is not a mine and the number of adjacent flags plus the number of adjacent revealed mines equals the number of adjacent mines:
+
+$$ x \in R \wedge x \notin M \wedge \left | A \cap F \right | + \left | A \cap R \cap M \right | = \left | A \cap M \right | $$
+
+Then add the adjacent non-flagged cells to $R$:
+
+$$ R \cup \left ( A \setminus F \right ) $$
+
+\end{document}
