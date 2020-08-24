@@ -53,11 +53,9 @@ class Grid:
         )
 
     def __adjacent(self, r, c):
-        return {
-            x
-            for x in product({r - 1, r, r + 1}, {c - 1, c, c + 1})
-            if x in self and x != (r, c)
-        }
+        A = set(product({r - 1, r, r + 1}, {c - 1, c, c + 1})) - {(r, c)}
+
+        return {t for t in A if t in self}
 
     def __generate(self, r, c):
         self.__mines |= set(
@@ -66,6 +64,17 @@ class Grid:
                 self.__numMines,
             )
         )
+
+    def __autoReveal(self, s0):
+        R, F, M = self.__revealed, self.__flags, self.__mines
+
+        S = set(s0)
+        while len(S) != 0:
+            x = S.pop()
+            A = self.__adjacent(*x)
+            if x not in M and len(A & M) == 0:
+                S |= A - R - F
+            R |= {x}
 
     def reveal(self, r, c, auto=True):
         x, R, F, M = (r, c), self.__revealed, self.__flags, self.__mines
@@ -77,6 +86,9 @@ class Grid:
 
         if x not in F:
             R |= {x}
+
+            if auto:
+                self.__autoReveal({x})
             return True
         else:
             return False
@@ -88,6 +100,7 @@ class Grid:
 
         if x not in R:
             F ^= {x}
+
             return True
         else:
             return False
@@ -100,6 +113,9 @@ class Grid:
         A = self.__adjacent(*x)
         if x in R and x not in M and len(A & F) + len(A & R & M) == len(A & M):
             R |= A - F
+
+            if auto:
+                self.__autoReveal(A - F)
             return True
         else:
             return False
