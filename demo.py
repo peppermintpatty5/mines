@@ -1,101 +1,118 @@
 #!/usr/bin/env python3
 
 from mines import Grid
-from sys import argv
 import argparse
 import curses
 
 
-BLACK = 0x0
-RED = 0x1
-GREEN = 0x2
-YELLOW = 0x3
-BLUE = 0x4
-MAGENTA = 0x5
-CYAN = 0x6
-WHITE = 0x7
-BRIGHT_BLACK = 0x8
-BRIGHT_RED = 0x9
-BRIGHT_GREEN = 0xA
-BRIGHT_YELLOW = 0xB
-BRIGHT_BLUE = 0xC
-BRIGHT_MAGENTA = 0xD
-BRIGHT_CYAN = 0xE
-BRIGHT_WHITE = 0xF
-
-cellColors = {
-    "1": BRIGHT_BLUE,
-    "2": GREEN,
-    "3": BRIGHT_RED,
-    "4": BLUE,
-    "5": RED,
-    "6": CYAN,
-    "7": BRIGHT_WHITE,
-    "8": BRIGHT_BLACK,
-    "@": BRIGHT_YELLOW,
-    "*": YELLOW,
-    "#": YELLOW,
-    "X": BRIGHT_MAGENTA,
-    "-": BRIGHT_BLACK,
-}
-
-
-def printGrid(stdscr, args, grid):
+def printGrid(stdscr, grid, color, colorMap, r0, c0, r1, c1):
+    cellColors = {
+        "1": "BRIGHT BLUE",
+        "2": "GREEN",
+        "3": "BRIGHT RED",
+        "4": "BLUE",
+        "5": "RED",
+        "6": "CYAN",
+        "7": "BRIGHT WHITE",
+        "8": "BRIGHT BLACK",
+        "@": "BRIGHT YELLOW",
+        "*": "YELLOW",
+        "#": "BRIGHT GREEN",
+        "X": "BRIGHT MAGENTA",
+        "-": "WHITE",
+    }
     lose = False  # TODO need win/lose function
-    stdscr.move(0, 0)
-    for r in range(args.rows):
-        for c in range(args.cols):
+    hide = {"X": "#", "*": "-"}
+    maxY, maxX = stdscr.getmaxyx()
+
+    for r in range(r0, r1):
+        for c in range(c0, c1):
             x, y = c * 2 + 1, r
             cell = grid[(r, c)]
 
-            if not lose and cell == "X":
-                cell = "#"
-            if not lose and cell == "*":
-                cell = "-"
-            if cell != "0":
-                stdscr.addstr(y, x, cell, curses.color_pair(cellColors[cell]))
-            else:
-                stdscr.addstr(y, x, " ")
+            if not lose:
+                cell = hide[cell] if cell in hide else cell
 
-    stdscr.refresh()
+            if cell == "0":
+                cell = " "
+
+            if x < maxX and y < maxY:
+                stdscr.addch(
+                    y,
+                    x,
+                    cell,
+                    colorMap[cellColors[cell]]
+                    if color and cell in cellColors
+                    else curses.color_pair(0),
+                )
 
 
 def main(stdscr, args):
     # curses init
-    curses.start_color()
+    colorKeys = [
+        "BLACK",
+        "RED",
+        "GREEN",
+        "YELLOW",
+        "BLUE",
+        "MAGENTA",
+        "CYAN",
+        "WHITE",
+        "BRIGHT BLACK",
+        "BRIGHT RED",
+        "BRIGHT GREEN",
+        "BRIGHT YELLOW",
+        "BRIGHT BLUE",
+        "BRIGHT MAGENTA",
+        "BRIGHT CYAN",
+        "BRIGHT WHITE",
+    ]
+    colorMap = {}
     curses.use_default_colors()
-    for i in range(0, curses.COLORS):
-        curses.init_pair(i, i if args.color else -1, -1)
+
+    if curses.COLORS >= 16:
+        for i, I in enumerate(colorKeys):
+            if i != 0:
+                curses.init_pair(i, i, -1)
+            colorMap[I] = curses.color_pair(i) | curses.A_NORMAL
+    elif curses.COLORS >= 8:
+        for i, I in enumerate(colorKeys):
+            if i != 0 and i < 8:
+                curses.init_pair(i, i, -1)
+            colorMap[I] = curses.color_pair(i % 8) | (
+                curses.A_NORMAL if i < 8 else curses.A_BOLD
+            )
 
     # game init
-    x, y = 0, 0
+    r, c = 0, 0
+    r0, c0, r1, c1 = 0, 0, args.rows, args.cols  # TODO grid viewing rectangle
     grid = Grid(args.rows, args.cols, args.mines)
 
     # game loop
     while True:
-        printGrid(stdscr, args, grid)
+        maxY, maxX = stdscr.getmaxyx()
+        printGrid(stdscr, grid, args.color, colorMap, r0, c0, r1, c1)
 
-        stdscr.move(y, 2 * x + 1)
-        curses.curs_set(True)
-        c = stdscr.getch()
-        curses.curs_set(False)
+        stdscr.move(r, 2 * c + 1)  # TODO can crash if cursor moves out of display
+        curses.curs_set(1)
+        stdscr.refresh()
+        ch = stdscr.getch()
+        curses.curs_set(0)
 
-        if c in [ord("q"), ord("Q")]:
+        if ch in [ord("q"), ord("Q")]:
             break
-        elif c == curses.KEY_RESIZE:
-            pass  # TODO fix resize crashing
-        elif c in [curses.KEY_UP]:
-            y = (y - 1) % args.rows
-        elif c in [curses.KEY_DOWN]:
-            y = (y + 1) % args.rows
-        elif c in [curses.KEY_LEFT]:
-            x = (x - 1) % args.cols
-        elif c in [curses.KEY_RIGHT]:
-            x = (x + 1) % args.cols
-        elif c in [ord(" ")]:
-            grid.flag(y, x) or grid.chord(y, x, auto=args.auto)
-        elif c in [curses.KEY_ENTER, ord("\n"), ord("\r")]:
-            grid.reveal(y, x, auto=args.auto)
+        elif ch in [curses.KEY_UP]:
+            r = (r - 1) % args.rows
+        elif ch in [curses.KEY_DOWN]:
+            r = (r + 1) % args.rows
+        elif ch in [curses.KEY_LEFT]:
+            c = (c - 1) % args.cols
+        elif ch in [curses.KEY_RIGHT]:
+            c = (c + 1) % args.cols
+        elif ch in [ord(" ")]:
+            grid.flag(r, c) or grid.chord(r, c, auto=args.auto)
+        elif ch in [curses.KEY_ENTER, ord("\n"), ord("\r")]:
+            grid.reveal(r, c, auto=args.auto)
 
 
 if __name__ == "__main__":
