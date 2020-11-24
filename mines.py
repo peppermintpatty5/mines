@@ -58,7 +58,7 @@ class Grid:
         return {t for t in A if t in self}
 
     def __generate(self, r, c):
-        self.__mines |= set(
+        self.__mines = set(
             sample(
                 set(product(range(self.__rows), range(self.__cols))) - {(r, c)},
                 self.__numMines,
@@ -75,6 +75,11 @@ class Grid:
             if x not in M and len(A & M) == 0:
                 S |= A - R - F
             R |= {x}
+
+    def reset(self):
+        self.__revealed.clear()
+        self.__flags.clear()
+        self.__mines.clear()
 
     def reveal(self, r, c, auto=True):
         x, R, F, M = (r, c), self.__revealed, self.__flags, self.__mines

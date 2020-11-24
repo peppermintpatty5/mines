@@ -101,6 +101,8 @@ def main(stdscr, args):
 
         if ch in [ord("q"), ord("Q")]:
             break
+        elif ch in [ord("r"), ord("R")]:
+            grid.reset()
         elif ch in [curses.KEY_UP]:
             r = (r - 1) % args.rows
         elif ch in [curses.KEY_DOWN]:
