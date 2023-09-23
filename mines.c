@@ -3,10 +3,10 @@
 #include "array_grid.h"
 #include "mines.h"
 
-#define X_MIN -128
-#define X_MAX 127
-#define Y_MIN -128
-#define Y_MAX 127
+#define X_MIN -3000
+#define X_MAX 3000
+#define Y_MIN -3000
+#define Y_MAX 3000
 
 typedef bool(predicate_t)(Minesweeper *, long, long);
 typedef void(action_t)(Minesweeper *, long, long);
@@ -199,4 +199,16 @@ enum tile get_tile(Minesweeper *game, long x, long y)
                : (is_uncovered(x, y)
                       ? count_adj(x, y, is_mine)
                       : (is_flagged(x, y) ? TILE_FLAG_WRONG : TILE_PLAIN));
+}
+
+static bool unvisited_zero_tile(Minesweeper *game, long x, long y)
+{
+    return get_tile(game, x, y) == TILE_ZERO &&
+           !all_adjacent(game, x, y, is_uncovered);
+}
+
+void auto_chord(Minesweeper *game, long x, long y)
+{
+    chord(game, x, y);
+    foreach_adjacent(game, x, y, unvisited_zero_tile, auto_chord);
 }

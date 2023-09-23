@@ -3,29 +3,14 @@
 #include <time.h>
 
 #include "mines.h"
+#include "textui.h"
 
 int main(void)
 {
-    long x, y;
-    char const *legend = " 12345678-*@#X";
-    Minesweeper *game = minesweeper_new(0.17);
+    Minesweeper *game = minesweeper_new(0.10);
 
     srand(time(NULL));
-
-    for (y = 0; y < 16; y++)
-        for (x = 0; x < 30; x++)
-            uncover(game, x, y);
-
-    for (y = 0; y < 16; y++)
-    {
-        for (x = 0; x < 30; x++)
-        {
-            putchar(' ');
-            putchar(legend[get_tile(game, x, y)]);
-        }
-
-        putchar('\n');
-    }
+    textui_run(game);
 
     return EXIT_SUCCESS;
 }

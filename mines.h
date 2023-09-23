@@ -59,4 +59,6 @@ extern bool chord(Minesweeper *game, long x, long y);
  */
 extern enum tile get_tile(Minesweeper *game, long x, long y);
 
+extern void auto_chord(Minesweeper *game, long x, long y);
+
 #endif
